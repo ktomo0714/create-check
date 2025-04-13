@@ -12,7 +12,7 @@
 
 1. リポジトリをクローンする：
 ```
-git clone https://github.com/yourusername/text-generation-app.git
+https://github.com/ktomo0714/create-check.git
 cd text-generation-app
 ```
 
