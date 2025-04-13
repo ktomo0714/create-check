@@ -1,19 +1,6 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 import os
-import sys
-
-# 環境変数からプロキシ設定を削除
-for env_var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
-    if env_var in os.environ:
-        del os.environ[env_var]
-
-# OpenAI SDK バージョンを表示（デバッグ用）
-try:
-    import openai
-    st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
-except:
-    st.sidebar.write("OpenAI SDKバージョンを確認できません")
 
 # Streamlit Secretsからのキー読み込み
 try:
@@ -23,18 +10,14 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# デバッグ情報を表示
-st.sidebar.write("Python version:", sys.version)
-st.sidebar.write("環境変数:", [k for k in os.environ.keys() if 'proxy' in k.lower()])
-
-# 最新の方法でのOpenAIクライアント初期化（プロキシなし）
+# OpenAI SDKバージョンを表示（デバッグ用）
 try:
-    # プロキシ設定を明示的に渡さない
-    client = OpenAI(api_key=api_key)
-    st.sidebar.success("クライアント初期化成功")
-except Exception as e:
-    st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
-    st.stop()
+    st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
+except:
+    st.sidebar.write("OpenAI SDKバージョンを確認できません")
+
+# 古いバージョンのOpenAI SDKを使用
+openai.api_key = api_key
 
 # アプリのタイトルとスタイル
 st.set_page_config(
@@ -102,7 +85,8 @@ if app_mode == "テキスト生成":
                 """
                 
                 try:
-                    response = client.chat.completions.create(
+                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
+                    response = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
@@ -155,7 +139,8 @@ elif app_mode == "テキスト校閲":
                 """
                 
                 try:
-                    response = client.chat.completions.create(
+                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
+                    response = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
