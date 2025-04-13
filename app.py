@@ -1,13 +1,6 @@
 import streamlit as st
-from openai import OpenAI  # 正しいインポート方法
+from openai import OpenAI
 import os
-
-# OpenAI SDK バージョンを表示（デバッグ用）
-try:
-    import openai
-    st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
-except:
-    st.sidebar.write("OpenAI SDKバージョンを確認できません")
 
 # Streamlit Secretsからのキー読み込み
 try:
@@ -17,12 +10,26 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# 新しいSDKでのOpenAIクライアントの初期化
+# OpenAIクライアントの初期化 - プロキシ設定なし
 try:
+    # プロキシ設定を含めずに初期化
     client = OpenAI(api_key=api_key)
 except Exception as e:
-    st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
-    st.stop()
+    # 何かしらの環境変数でプロキシ設定がある場合を考慮
+    try:
+        # 環境変数OPENAI_PROXY、http_proxy、https_proxyをクリア
+        if 'OPENAI_PROXY' in os.environ:
+            del os.environ['OPENAI_PROXY']
+        if 'http_proxy' in os.environ:
+            del os.environ['http_proxy']
+        if 'https_proxy' in os.environ:
+            del os.environ['https_proxy']
+        
+        # 再度初期化を試みる
+        client = OpenAI(api_key=api_key)
+    except Exception as e2:
+        st.error(f"OpenAIクライアントの初期化に失敗しました: {e2}")
+        st.stop()
 
 # アプリのタイトルとスタイル
 st.set_page_config(
@@ -90,7 +97,6 @@ if app_mode == "テキスト生成":
                 """
                 
                 try:
-                    # 新しい形式のAPI呼び出し
                     response = client.chat.completions.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
@@ -144,7 +150,6 @@ elif app_mode == "テキスト校閲":
                 """
                 
                 try:
-                    # 新しい形式のAPI呼び出し
                     response = client.chat.completions.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
