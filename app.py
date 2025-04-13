@@ -1,6 +1,19 @@
 import streamlit as st
 from openai import OpenAI
 import os
+import sys
+
+# 環境変数からプロキシ設定を削除
+for env_var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+    if env_var in os.environ:
+        del os.environ[env_var]
+
+# OpenAI SDK バージョンを表示（デバッグ用）
+try:
+    import openai
+    st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
+except:
+    st.sidebar.write("OpenAI SDKバージョンを確認できません")
 
 # Streamlit Secretsからのキー読み込み
 try:
@@ -10,26 +23,18 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# OpenAIクライアントの初期化 - プロキシ設定なし
+# デバッグ情報を表示
+st.sidebar.write("Python version:", sys.version)
+st.sidebar.write("環境変数:", [k for k in os.environ.keys() if 'proxy' in k.lower()])
+
+# 最新の方法でのOpenAIクライアント初期化（プロキシなし）
 try:
-    # プロキシ設定を含めずに初期化
+    # プロキシ設定を明示的に渡さない
     client = OpenAI(api_key=api_key)
+    st.sidebar.success("クライアント初期化成功")
 except Exception as e:
-    # 何かしらの環境変数でプロキシ設定がある場合を考慮
-    try:
-        # 環境変数OPENAI_PROXY、http_proxy、https_proxyをクリア
-        if 'OPENAI_PROXY' in os.environ:
-            del os.environ['OPENAI_PROXY']
-        if 'http_proxy' in os.environ:
-            del os.environ['http_proxy']
-        if 'https_proxy' in os.environ:
-            del os.environ['https_proxy']
-        
-        # 再度初期化を試みる
-        client = OpenAI(api_key=api_key)
-    except Exception as e2:
-        st.error(f"OpenAIクライアントの初期化に失敗しました: {e2}")
-        st.stop()
+    st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
+    st.stop()
 
 # アプリのタイトルとスタイル
 st.set_page_config(
