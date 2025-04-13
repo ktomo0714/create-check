@@ -1,5 +1,5 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 import os
 
 # Streamlit Secretsからのキー読み込み
@@ -10,12 +10,8 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# OpenAIクライアントの初期化 - 新しい方法
-try:
-    client = OpenAI(api_key=api_key)
-except Exception as e:
-    st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
-    st.stop()
+# 古い方式でのOpenAI API設定
+openai.api_key = api_key
 
 # アプリのタイトルとスタイル
 st.set_page_config(
@@ -83,7 +79,8 @@ if app_mode == "テキスト生成":
                 """
                 
                 try:
-                    response = client.chat.completions.create(
+                    # 古い形式のAPI呼び出し
+                    response = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
@@ -136,7 +133,8 @@ elif app_mode == "テキスト校閲":
                 """
                 
                 try:
-                    response = client.chat.completions.create(
+                    # 古い形式のAPI呼び出し
+                    response = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
