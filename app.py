@@ -1,6 +1,20 @@
 import streamlit as st
-import openai
+
+# 最初にページ設定を行う（必ず最初のStreamlit関数として呼び出す）
+st.set_page_config(
+    page_title="生成・校閲アプリケーション",
+    page_icon="📝",
+    layout="wide"
+)
+
 import os
+import openai  # 古いSDK方式を使用
+
+# OpenAI SDKバージョンを表示（デバッグ用）
+try:
+    st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
+except Exception as e:
+    st.sidebar.write("OpenAI SDKバージョンを確認できません")
 
 # Streamlit Secretsからのキー読み込み
 try:
@@ -10,21 +24,8 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# OpenAI SDKバージョンを表示（デバッグ用）
-try:
-    st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
-except:
-    st.sidebar.write("OpenAI SDKバージョンを確認できません")
-
 # 古いバージョンのOpenAI SDKを使用
 openai.api_key = api_key
-
-# アプリのタイトルとスタイル
-st.set_page_config(
-    page_title="生成・校閲アプリケーション",
-    page_icon="📝",
-    layout="wide"
-)
 
 # サイドバーメニュー
 with st.sidebar:
