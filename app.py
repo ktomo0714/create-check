@@ -40,7 +40,7 @@ with st.sidebar:
     # APIモデル選択
     model = st.selectbox(
         "使用するモデル:",
-        ["gpt-4o-mini", "gpt-4o-turbo"],
+        ["gpt-4o-mini", "gpt-4-turbo", "o3-mini"],
         index=0
     )
     
