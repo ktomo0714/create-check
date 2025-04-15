@@ -47,11 +47,26 @@ with st.sidebar:
     # 温度設定（クリエイティビティの調整）
     temperature = st.slider("温度 (クリエイティビティ)", 0.0, 1.0, 0.7, 0.1)
     
+    # ストリーミング設定
+    use_streaming = st.checkbox("ストリーミング表示を有効にする", value=True)
+    
     st.divider()
     st.write("生成・校閲アプリケーション")
 
 # メインコンテンツ
 st.title("生成・校閲アプリケーション")
+
+# ストリーミング処理関数
+def process_openai_stream(stream, placeholder):
+    """OpenAI APIからのストリームを処理し、Streamlitに表示する"""
+    collected_content = ""
+    for chunk in stream:
+        if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
+            content_chunk = chunk.choices[0].delta.content
+            if content_chunk is not None:
+                collected_content += content_chunk
+                placeholder.markdown(collected_content)
+    return collected_content
 
 if app_mode == "テキスト生成":
     st.header("テキスト生成")
@@ -74,40 +89,57 @@ if app_mode == "テキスト生成":
         if not topic:
             st.warning("トピックを入力してください。")
         else:
-            with st.spinner("AIが文章を生成中..."):
-                prompt = f"""
-                次の条件に合うテキストを生成してください:
-                - タイプ: {prompt_type}
-                - トピック: {topic}
-                - 長さ: {length}
-                - 追加情報: {additional_info}
+            prompt = f"""
+            次の条件に合うテキストを生成してください:
+            - タイプ: {prompt_type}
+            - トピック: {topic}
+            - 長さ: {length}
+            - 追加情報: {additional_info}
+            
+            日本語で自然な文章を生成してください。
+            """
+            
+            try:
+                # 結果表示用のコンテナを準備
+                result_container = st.container()
+                result_container.info("AIが文章を生成中...")
+                output_placeholder = result_container.empty()
                 
-                日本語で自然な文章を生成してください。
-                """
-                
-                try:
-                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
-                    response = openai.ChatCompletion.create(
+                if use_streaming:
+                    # ストリーミングモードでAPI呼び出し
+                    stream = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
+                        stream=True
                     )
                     
-                    result = response.choices[0].message.content
-                    
-                    st.success("テキストが生成されました！")
-                    st.text_area("生成されたテキスト:", result, height=300)
-                    
-                    # ダウンロードボタン
-                    st.download_button(
-                        label="テキストをダウンロード",
-                        data=result,
-                        file_name=f"{topic}_generated_text.txt",
-                        mime="text/plain"
-                    )
+                    result = process_openai_stream(stream, output_placeholder)
+                else:
+                    # 非ストリーミングモードでAPI呼び出し
+                    with st.spinner("AIが文章を生成中..."):
+                        response = openai.ChatCompletion.create(
+                            model=model,
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=temperature,
+                        )
+                        
+                        result = response.choices[0].message.content
+                        output_placeholder.markdown(result)
                 
-                except Exception as e:
-                    st.error(f"エラーが発生しました: {str(e)}")
+                # 処理完了後にステータスを更新
+                result_container.success("テキストが生成されました！")
+                
+                # ダウンロードボタン
+                st.download_button(
+                    label="テキストをダウンロード",
+                    data=result,
+                    file_name=f"{topic}_generated_text.txt",
+                    mime="text/plain"
+                )
+            
+            except Exception as e:
+                st.error(f"エラーが発生しました: {str(e)}")
 
 elif app_mode == "テキスト校閲":
     st.header("テキスト校閲")
@@ -123,52 +155,71 @@ elif app_mode == "テキスト校閲":
         if not input_text:
             st.warning("テキストを入力してください。")
         else:
-            with st.spinner("AIが校閲中..."):
-                checks = ", ".join(check_options) if check_options else "すべての側面"
+            checks = ", ".join(check_options) if check_options else "すべての側面"
+            
+            prompt = f"""
+            以下のテキストを校閲してください。{checks}に注目して改善点を指摘し、
+            修正案を提案してください。元のテキストを尊重しつつ、より明確で効果的な表現を目指してください。
+            
+            テキスト:
+            {input_text}
+            
+            以下の形式で回答してください：
+            1. 全体的な評価
+            2. 具体的な改善点（元の文と修正案を対比）
+            3. 修正後の全文
+            """
+            
+            try:
+                # タブで表示
+                tab1, tab2 = st.tabs(["校閲結果", "比較"])
                 
-                prompt = f"""
-                以下のテキストを校閲してください。{checks}に注目して改善点を指摘し、
-                修正案を提案してください。元のテキストを尊重しつつ、より明確で効果的な表現を目指してください。
-                
-                テキスト:
-                {input_text}
-                
-                以下の形式で回答してください：
-                1. 全体的な評価
-                2. 具体的な改善点（元の文と修正案を対比）
-                3. 修正後の全文
-                """
-                
-                try:
-                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
-                    response = openai.ChatCompletion.create(
-                        model=model,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature,
-                    )
+                with tab1:
+                    # 結果表示用のコンテナを準備
+                    result_container = st.container()
+                    result_container.info("AIが校閲中...")
+                    output_placeholder = result_container.empty()
                     
-                    result = response.choices[0].message.content
+                    if use_streaming:
+                        # ストリーミングモードでAPI呼び出し
+                        stream = openai.ChatCompletion.create(
+                            model=model,
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=temperature,
+                            stream=True
+                        )
+                        
+                        result = process_openai_stream(stream, output_placeholder)
+                    else:
+                        # 非ストリーミングモードでAPI呼び出し
+                        with st.spinner("AIが校閲中..."):
+                            response = openai.ChatCompletion.create(
+                                model=model,
+                                messages=[{"role": "user", "content": prompt}],
+                                temperature=temperature,
+                            )
+                            
+                            result = response.choices[0].message.content
+                            output_placeholder.markdown(result)
                     
-                    st.success("校閲が完了しました！")
-                    st.markdown(result)
-                    
-                    # タブで表示
-                    tab1, tab2 = st.tabs(["校閲結果", "比較"])
-                    with tab1:
-                        st.markdown(result)
-                    with tab2:
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.subheader("元のテキスト")
-                            st.text_area("", input_text, height=300)
-                        with col2:
-                            st.subheader("校閲後の提案")
-                            # ここは実際には校閲後のテキストだけを抽出する必要があります
-                            # 簡易的な実装として全体を表示
+                    # 処理完了後にステータスを更新
+                    result_container.success("校閲が完了しました！")
+                
+                with tab2:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.subheader("元のテキスト")
+                        st.text_area("", input_text, height=300)
+                    with col2:
+                        st.subheader("校閲後の提案")
+                        # 処理が完了するまで待機
+                        if 'result' in locals():
                             st.text_area("", result, height=300)
-                
-                except Exception as e:
-                    st.error(f"エラーが発生しました: {str(e)}")
+                        else:
+                            st.info("校閲結果を待っています...")
+            
+            except Exception as e:
+                st.error(f"エラーが発生しました: {str(e)}")
 
 # フッター
 st.markdown("---")
