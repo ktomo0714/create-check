@@ -8,7 +8,7 @@ st.set_page_config(
 )
 
 import os
-import openai  # 古いSDK方式を使用
+from openai import OpenAI  # 注意: インポート方法を変更
 
 # OpenAI SDKバージョンを表示（デバッグ用）
 try:
@@ -24,8 +24,8 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# 古いバージョンのOpenAI SDKを使用
-openai.api_key = api_key
+# openai.OpenAI ではなく OpenAI を直接使用
+ client = OpenAI(api_key=api_key) 
 
 # サイドバーメニュー
 with st.sidebar:
@@ -40,7 +40,7 @@ with st.sidebar:
     # APIモデル選択
     model = st.selectbox(
         "使用するモデル:",
-        ["gpt-4o-mini", "gpt-4-turbo"],
+        ["gpt-4o-mini", "gpt-4o"],
         index=0
     )
     
