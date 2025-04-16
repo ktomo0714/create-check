@@ -1,12 +1,6 @@
 import streamlit as st
-from openai import OpenAI
+from openai import OpenAI  # 正しいインポート方法
 import os
-import sys
-
-# 環境変数からプロキシ設定を削除
-for env_var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
-    if env_var in os.environ:
-        del os.environ[env_var]
 
 # OpenAI SDK バージョンを表示（デバッグ用）
 try:
@@ -23,15 +17,9 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# デバッグ情報を表示
-st.sidebar.write("Python version:", sys.version)
-st.sidebar.write("環境変数:", [k for k in os.environ.keys() if 'proxy' in k.lower()])
-
-# 最新の方法でのOpenAIクライアント初期化（プロキシなし）
+# 新しいSDKでのOpenAIクライアントの初期化
 try:
-    # プロキシ設定を明示的に渡さない
     client = OpenAI(api_key=api_key)
-    st.sidebar.success("クライアント初期化成功")
 except Exception as e:
     st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
     st.stop()
@@ -102,6 +90,7 @@ if app_mode == "テキスト生成":
                 """
                 
                 try:
+                    # 新しい形式のAPI呼び出し
                     response = client.chat.completions.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
@@ -155,6 +144,7 @@ elif app_mode == "テキスト校閲":
                 """
                 
                 try:
+                    # 新しい形式のAPI呼び出し
                     response = client.chat.completions.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
