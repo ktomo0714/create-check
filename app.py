@@ -40,7 +40,7 @@ with st.sidebar:
     # APIモデル選択
     model = st.selectbox(
         "使用するモデル:",
-        ["gpt-4o-mini", "gpt-4-turbo"],
+        ["gpt-4o-mini", "gpt-4o"],
         index=0
     )
     
@@ -116,7 +116,7 @@ elif app_mode == "テキスト校閲":
     
     check_options = st.multiselect(
         "確認項目:",
-        ["文法", "スペル", "景品表示法への抵触がないか", "わかりやすさ", "一貫性"]
+        ["景品表示法への抵触がないか","金融商品取引法への抵触がないか","文法", "スペル","わかりやすさ", "一貫性"]
     )
     
     if st.button("校閲する", type="primary"):
