@@ -1,24 +1,19 @@
 import streamlit as st
-# OpenAI SDKをインポート
-from openai import OpenAI
-# モンキーパッチ: proxies引数を無視する
-original_init = OpenAI.__init__
 
-def patched_init(self, *args, **kwargs):
-    # proxies引数を削除
-    if 'proxies' in kwargs:
-        del kwargs['proxies']
-    # 元の__init__を呼び出す
-    original_init(self, *args, **kwargs)
+# 最初にページ設定を行う（必ず最初のStreamlit関数として呼び出す）
+st.set_page_config(
+    page_title="生成・校閲アプリケーション",
+    page_icon="📝",
+    layout="wide"
+)
 
-# __init__メソッドを置き換える
-OpenAI.__init__ = patched_init
+import os
+import openai  # 古いSDK方式を使用
 
-# OpenAI SDK バージョンを表示（デバッグ用）
+# OpenAI SDKバージョンを表示（デバッグ用）
 try:
-    import openai
     st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
-except:
+except Exception as e:
     st.sidebar.write("OpenAI SDKバージョンを確認できません")
 
 # Streamlit Secretsからのキー読み込み
@@ -29,19 +24,8 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# 新しいSDKでのOpenAIクライアントの初期化
-try:
-    client = OpenAI(api_key=api_key)
-except Exception as e:
-    st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
-    st.stop()
-
-# アプリのタイトルとスタイル
-st.set_page_config(
-    page_title="生成・校閲アプリケーション",
-    page_icon="📝",
-    layout="wide"
-)
+# 古いバージョンのOpenAI SDKを使用
+openai.api_key = api_key
 
 # サイドバーメニュー
 with st.sidebar:
@@ -102,8 +86,8 @@ if app_mode == "テキスト生成":
                 """
                 
                 try:
-                    # 新しい形式のAPI呼び出し
-                    response = client.chat.completions.create(
+                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
+                    response = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
@@ -156,8 +140,8 @@ elif app_mode == "テキスト校閲":
                 """
                 
                 try:
-                    # 新しい形式のAPI呼び出し
-                    response = client.chat.completions.create(
+                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
+                    response = openai.ChatCompletion.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
