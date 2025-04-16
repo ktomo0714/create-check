@@ -1,6 +1,18 @@
 import streamlit as st
-from openai import OpenAI  # 正しいインポート方法
-import os
+# OpenAI SDKをインポート
+from openai import OpenAI
+# モンキーパッチ: proxies引数を無視する
+original_init = OpenAI.__init__
+
+def patched_init(self, *args, **kwargs):
+    # proxies引数を削除
+    if 'proxies' in kwargs:
+        del kwargs['proxies']
+    # 元の__init__を呼び出す
+    original_init(self, *args, **kwargs)
+
+# __init__メソッドを置き換える
+OpenAI.__init__ = patched_init
 
 # OpenAI SDK バージョンを表示（デバッグ用）
 try:
