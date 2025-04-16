@@ -1,19 +1,18 @@
 import streamlit as st
-
-# 最初にページ設定を行う（必ず最初のStreamlit関数として呼び出す）
-st.set_page_config(
-    page_title="生成・校閲アプリケーション",
-    page_icon="📝",
-    layout="wide"
-)
-
+from openai import OpenAI
 import os
-from openai import OpenAI  # 注意: インポート方法を変更
+import sys
 
-# OpenAI SDKバージョンを表示（デバッグ用）
+# 環境変数からプロキシ設定を削除
+for env_var in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY']:
+    if env_var in os.environ:
+        del os.environ[env_var]
+
+# OpenAI SDK バージョンを表示（デバッグ用）
 try:
+    import openai
     st.sidebar.write(f"OpenAI SDK バージョン: {openai.__version__}")
-except Exception as e:
+except:
     st.sidebar.write("OpenAI SDKバージョンを確認できません")
 
 # Streamlit Secretsからのキー読み込み
@@ -24,8 +23,25 @@ except Exception as e:
     st.error(f"エラー詳細: {e}")
     st.stop()
 
-# openai.OpenAI ではなく OpenAI を直接使用
- client = OpenAI(api_key=api_key) 
+# デバッグ情報を表示
+st.sidebar.write("Python version:", sys.version)
+st.sidebar.write("環境変数:", [k for k in os.environ.keys() if 'proxy' in k.lower()])
+
+# 最新の方法でのOpenAIクライアント初期化（プロキシなし）
+try:
+    # プロキシ設定を明示的に渡さない
+    client = OpenAI(api_key=api_key)
+    st.sidebar.success("クライアント初期化成功")
+except Exception as e:
+    st.error(f"OpenAIクライアントの初期化に失敗しました: {e}")
+    st.stop()
+
+# アプリのタイトルとスタイル
+st.set_page_config(
+    page_title="生成・校閲アプリケーション",
+    page_icon="📝",
+    layout="wide"
+)
 
 # サイドバーメニュー
 with st.sidebar:
@@ -40,7 +56,7 @@ with st.sidebar:
     # APIモデル選択
     model = st.selectbox(
         "使用するモデル:",
-        ["gpt-4o-mini", "gpt-4o"],
+        ["gpt-4o-mini", "gpt-4-turbo"],
         index=0
     )
     
@@ -86,8 +102,7 @@ if app_mode == "テキスト生成":
                 """
                 
                 try:
-                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
-                    response = openai.ChatCompletion.create(
+                    response = client.chat.completions.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
@@ -140,8 +155,7 @@ elif app_mode == "テキスト校閲":
                 """
                 
                 try:
-                    # 古いバージョンのOpenAI SDKを使用したAPI呼び出し
-                    response = openai.ChatCompletion.create(
+                    response = client.chat.completions.create(
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=temperature,
